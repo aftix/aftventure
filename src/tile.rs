@@ -57,6 +57,16 @@ impl Tile for Air {
         Ok(())
     }
 
+    fn render_top(
+        &self,
+        (col, row): (u16, u16),
+        _size: (u16, u16),
+        out: &mut RawTerminal<StdoutLock<'_>>,
+    ) -> Result<(), io::Error> {
+        write!(out, "{}", cursor::Goto(col, row))?;
+        Ok(())
+    }
+
     fn habitable(&self) -> bool {
         true
     }
