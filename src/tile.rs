@@ -1,23 +1,16 @@
-use std::io;
-use std::io::{StdoutLock, Write};
-use termion::{color, cursor, raw::RawTerminal, style};
+use crate::render;
+use crate::render::Style;
 
 pub trait Tile {
-    fn render(
-        &self,
-        pos: (u16, u16),
-        size: (u16, u16),
-        out: &mut RawTerminal<StdoutLock<'_>>,
-    ) -> Result<(), io::Error>;
+    fn render(&self, pos: (usize, usize), size: (usize, usize), buffer: &mut render::FrameBuffer);
 
     fn render_top(
         &self,
-        pos: (u16, u16),
-        _size: (u16, u16),
-        out: &mut RawTerminal<StdoutLock<'_>>,
-    ) -> Result<(), io::Error> {
-        write!(out, "{}.", cursor::Goto(pos.0, pos.1))?;
-        Ok(())
+        pos: (usize, usize),
+        _size: (usize, usize),
+        buffer: &mut render::FrameBuffer,
+    ) {
+        buffer.render(pos, &[], '.');
     }
 
     fn habitable(&self) -> bool {
@@ -47,24 +40,17 @@ impl Air {
 }
 
 impl Tile for Air {
-    fn render(
-        &self,
-        (col, row): (u16, u16),
-        _size: (u16, u16),
-        out: &mut RawTerminal<StdoutLock<'_>>,
-    ) -> Result<(), io::Error> {
-        write!(out, "{}", cursor::Goto(col, row))?;
-        Ok(())
+    fn render(&self, pos: (usize, usize), _size: (usize, usize), buffer: &mut render::FrameBuffer) {
+        buffer.render(pos, &[], ' ');
     }
 
     fn render_top(
         &self,
-        (col, row): (u16, u16),
-        _size: (u16, u16),
-        out: &mut RawTerminal<StdoutLock<'_>>,
-    ) -> Result<(), io::Error> {
-        write!(out, "{}", cursor::Goto(col, row))?;
-        Ok(())
+        pos: (usize, usize),
+        _size: (usize, usize),
+        buffer: &mut render::FrameBuffer,
+    ) {
+        buffer.render(pos, &[], ' ');
     }
 
     fn habitable(&self) -> bool {
@@ -84,38 +70,17 @@ impl Grass {
 }
 
 impl Tile for Grass {
-    fn render(
-        &self,
-        (col, row): (u16, u16),
-        _size: (u16, u16),
-        out: &mut RawTerminal<StdoutLock<'_>>,
-    ) -> Result<(), io::Error> {
-        write!(
-            out,
-            "{}{}{}\"{}",
-            cursor::Goto(col, row),
-            color::Fg(color::Rgb(150, 75, 0)),
-            style::Bold,
-            style::Reset
-        )?;
-        Ok(())
+    fn render(&self, pos: (usize, usize), _size: (usize, usize), buffer: &mut render::FrameBuffer) {
+        buffer.render(pos, &[Style::Fg(150, 75, 0), Style::Bold], '"');
     }
 
     fn render_top(
         &self,
-        (col, row): (u16, u16),
-        _size: (u16, u16),
-        out: &mut RawTerminal<StdoutLock<'_>>,
-    ) -> Result<(), io::Error> {
-        write!(
-            out,
-            "{}{}{}\"{}",
-            cursor::Goto(col, row),
-            color::Fg(color::Green),
-            style::Bold,
-            style::Reset
-        )?;
-        Ok(())
+        pos: (usize, usize),
+        _size: (usize, usize),
+        buffer: &mut render::FrameBuffer,
+    ) {
+        buffer.render(pos, &[Style::Fg(0, 255, 0), Style::Bold], '"');
     }
 }
 
@@ -127,20 +92,8 @@ impl Dirt {
 }
 
 impl Tile for Dirt {
-    fn render(
-        &self,
-        (col, row): (u16, u16),
-        _size: (u16, u16),
-        out: &mut RawTerminal<StdoutLock<'_>>,
-    ) -> Result<(), io::Error> {
-        write!(
-            out,
-            "{}{}\"{}",
-            cursor::Goto(col, row),
-            color::Fg(color::Rgb(150, 75, 0)),
-            style::Reset
-        )?;
-        Ok(())
+    fn render(&self, pos: (usize, usize), _size: (usize, usize), buffer: &mut render::FrameBuffer) {
+        buffer.render(pos, &[Style::Fg(150, 75, 0)], '"');
     }
 }
 
@@ -152,20 +105,8 @@ impl Stone {
 }
 
 impl Tile for Stone {
-    fn render(
-        &self,
-        (col, row): (u16, u16),
-        _size: (u16, u16),
-        out: &mut RawTerminal<StdoutLock<'_>>,
-    ) -> Result<(), io::Error> {
-        write!(
-            out,
-            "{}{}#{}",
-            cursor::Goto(col, row),
-            color::Fg(color::Rgb(128, 128, 128)),
-            style::Reset
-        )?;
-        Ok(())
+    fn render(&self, pos: (usize, usize), _size: (usize, usize), buffer: &mut render::FrameBuffer) {
+        buffer.render(pos, &[Style::Fg(128, 128, 128)], '#');
     }
 }
 
@@ -177,19 +118,7 @@ impl Gravel {
 }
 
 impl Tile for Gravel {
-    fn render(
-        &self,
-        (col, row): (u16, u16),
-        _size: (u16, u16),
-        out: &mut RawTerminal<StdoutLock<'_>>,
-    ) -> Result<(), io::Error> {
-        write!(
-            out,
-            "{}{}@{}",
-            cursor::Goto(col, row),
-            color::Fg(color::Rgb(100, 100, 100)),
-            style::Reset
-        )?;
-        Ok(())
+    fn render(&self, pos: (usize, usize), _size: (usize, usize), buffer: &mut render::FrameBuffer) {
+        buffer.render(pos, &[Style::Fg(100, 100, 100)], '@');
     }
 }

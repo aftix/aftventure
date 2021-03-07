@@ -1,14 +1,13 @@
-use super::tile;
-use super::Player;
+use crate::render;
+use crate::tile;
+use crate::Player;
+
+use termion::style;
 
 use chrono::Utc;
 use noise::{NoiseFn, OpenSimplex, Seedable};
 use std::collections::HashMap;
-use std::io;
-use std::io::{StdoutLock, Write};
 use std::rc::Rc;
-use termion::cursor;
-use termion::raw::RawTerminal;
 
 pub struct Chunk {
     x: i32,
@@ -127,13 +126,9 @@ impl World {
         }
     }
 
-    pub fn render(
-        &self,
-        (width, height): (u16, u16),
-        out: &mut RawTerminal<StdoutLock<'_>>,
-    ) -> Result<(), io::Error> {
+    pub fn render(&self, (width, height): (usize, usize), buffer: &mut render::FrameBuffer) {
         let screen_x = width / 2;
-        let screen_y = width / 2;
+        let screen_y = height / 2;
 
         // Screen space to world space
         let convert = |x: i32, y: i32| {
@@ -148,14 +143,15 @@ impl World {
                 let tile = self.get((coords.0, coords.1, self.player.z));
                 if tile.transparent() {
                     self.get((coords.0, coords.1, self.player.z - 1))
-                        .render_top((i, j), (width, height), out)?;
+                        .render_top((i, j), (width, height), buffer);
                 } else {
-                    tile.render((i, j), (width, height), out)?;
+                    tile.render((i, j), (width, height), buffer);
                 }
             }
         }
-
-        Ok(())
+        for i in 1..=width {
+            buffer.render((i, 1), &[], '#');
+        }
     }
 
     pub fn move_player(&mut self, x: i32, y: i32, z: i32) {

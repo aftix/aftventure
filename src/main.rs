@@ -8,8 +8,9 @@ use termion::{
     style,
 };
 
-mod tile;
-mod world;
+pub mod render;
+pub mod tile;
+pub mod world;
 
 pub struct Player {
     pub sprite: char,
@@ -25,22 +26,9 @@ impl Player {
 }
 
 fn render(world: &world::World, out: &mut RawTerminal<StdoutLock<'_>>) -> Result<(), io::Error> {
-    let (width, height) = termion::terminal_size()?;
-    let screen_x = width / 2;
-    let screen_y = height / 2;
-
-    write!(out, "{}", clear::All)?;
-    world.render((width, height), out)?;
-
-    writeln!(
-        out,
-        "{}{}{}{}{}",
-        cursor::Goto(screen_x, screen_y),
-        style::Bold,
-        world.player.sprite,
-        style::Reset,
-        world.player.z,
-    )?;
+    let mut framebuffer = render::FrameBuffer::new()?;
+    framebuffer.render_world(&world);
+    framebuffer.display(out)?;
     Ok(())
 }
 
