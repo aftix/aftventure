@@ -1,8 +1,7 @@
 use crate::render;
 use crate::tile;
+use crate::tile::Tile;
 use crate::Player;
-
-use termion::style;
 
 use chrono::Utc;
 use noise::{NoiseFn, OpenSimplex, Seedable};
@@ -12,23 +11,29 @@ use std::rc::Rc;
 pub struct Chunk {
     x: i32,
     y: i32,
-    tiles: Vec<Rc<dyn tile::Tile>>,
-    air: Rc<dyn tile::Tile>,
+    tiles: Vec<usize>,
+    air_id: usize,
 }
 
 impl Chunk {
-    pub fn new((x, y): (i32, i32), seed: u32, air: &Rc<dyn tile::Tile>) -> Chunk {
+    pub fn new((x, y): (i32, i32), seed: u32, map: &HashMap<String, usize>) -> Chunk {
+        let air = tile::Air::new();
+        let air_id = *map.get(&air.name()).unwrap();
         let mut chunk = Chunk {
             x,
             y,
-            tiles: Vec::with_capacity(32 * 32 * 256),
-            air: air.clone(),
+            tiles: vec![air_id; 32 * 32 * 256],
+            air_id,
         };
         let simplex = OpenSimplex::new().set_seed(seed);
 
-        for _ in 0..=32 * 32 * 256 {
-            chunk.tiles.push(Rc::new(tile::Air::new()));
-        }
+        let dirt = tile::Dirt::new();
+        let stone = tile::Stone::new();
+        let grass = tile::Grass::new();
+
+        let dirt = *map.get(&dirt.name()).unwrap();
+        let stone = *map.get(&stone.name()).unwrap();
+        let grass = *map.get(&grass.name()).unwrap();
 
         for i in 0..32 {
             for j in 0..32 {
@@ -43,14 +48,14 @@ impl Chunk {
                 let stackheight = stackheight as i32;
 
                 for k in 0..256 {
-                    let tile: Rc<dyn tile::Tile> = if k == stackheight {
-                        Rc::new(tile::Grass::new())
+                    let tile = if k == stackheight {
+                        grass
                     } else if k > stackheight {
-                        Rc::new(tile::Air::new())
+                        air_id
                     } else if k < stackheight && k > stackheight - 4 {
-                        Rc::new(tile::Dirt::new())
+                        dirt
                     } else {
-                        Rc::new(tile::Stone::new())
+                        stone
                     };
                     chunk.tiles[(k * 32 * 32 + i * 32 + j) as usize] = tile;
                 }
@@ -61,36 +66,44 @@ impl Chunk {
     }
 
     // x, y, z in chunk coords
-    pub fn get(&self, (x, y, z): (i32, i32, i32)) -> &Rc<dyn tile::Tile> {
+    pub fn get(&self, (x, y, z): (i32, i32, i32)) -> usize {
         if x < 0 || x >= 32 {
-            &self.air
+            self.air_id
         } else if y < 0 || y >= 32 {
-            &self.air
+            self.air_id
         } else if z < 0 || z >= 256 {
-            &self.air
+            self.air_id
         } else {
-            &self.tiles[(z * 32 * 32 + x * 32 + y) as usize]
+            self.tiles[(z * 32 * 32 + x * 32 + y) as usize]
         }
     }
 }
 
 pub struct World {
     seed: u32,
-    air: Rc<dyn tile::Tile>,
     pub player: Player,
     chunk_render_distance: u16,
     chunks: HashMap<(i32, i32), Chunk>,
+    tile_map: HashMap<String, usize>,
+    tiles: Vec<Box<dyn Tile>>,
 }
 
 impl World {
     pub fn new() -> Self {
         let mut world = World {
             seed: Utc::now().timestamp() as u32,
-            air: Rc::new(tile::Air::new_out_of_bounds()),
             player: Player::new(0, 0, 128, '☺'),
             chunk_render_distance: 8,
             chunks: HashMap::new(),
+            tile_map: HashMap::new(),
+            tiles: vec![],
         };
+
+        tile::add_tiles(&mut world.tiles);
+
+        for (i, tile) in world.tiles.iter().enumerate() {
+            world.tile_map.insert(tile.name(), i as usize);
+        }
 
         let half = world.chunk_render_distance / 2;
         let half = half as i32;
@@ -109,20 +122,24 @@ impl World {
         }
 
         self.chunks
-            .insert((x, y), Chunk::new((x, y), self.seed, &self.air));
+            .insert((x, y), Chunk::new((x, y), self.seed, &self.tile_map));
     }
 
-    pub fn get(&self, (x, y, z): (i32, i32, i32)) -> &Rc<dyn tile::Tile> {
+    pub fn get(&self, (x, y, z): (i32, i32, i32)) -> &Box<dyn Tile> {
         let chunk_x = x / 32;
         let chunk_y = y / 32;
 
+        let air = tile::Air::new();
+        let air_id = *self.tile_map.get(&air.name()).unwrap();
+
         if !self.chunks.contains_key(&(chunk_x, chunk_y)) {
-            &self.air
+            &self.tiles[air_id]
         } else {
-            self.chunks
-                .get(&(chunk_x, chunk_y))
-                .unwrap()
-                .get(((x % 32).abs(), (y % 32).abs(), z))
+            &self.tiles[self.chunks.get(&(chunk_x, chunk_y)).unwrap().get((
+                (x % 32).abs(),
+                (y % 32).abs(),
+                z,
+            ))]
         }
     }
 

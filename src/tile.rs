@@ -20,22 +20,21 @@ pub trait Tile {
     fn transparent(&self) -> bool {
         false
     }
+
+    fn name(&self) -> String;
 }
 
-pub struct Air {
-    out_of_bounds: bool,
+pub fn add_tiles(vec: &mut Vec<Box<dyn Tile>>) {
+    vec.push(Box::new(Air::new()));
+    vec.push(Box::new(Dirt::new()));
+    vec.push(Box::new(Stone::new()));
+    vec.push(Box::new(Grass::new()));
 }
+
+pub struct Air;
 impl Air {
     pub fn new() -> Self {
-        Air {
-            out_of_bounds: false,
-        }
-    }
-
-    pub fn new_out_of_bounds() -> Self {
-        Air {
-            out_of_bounds: true,
-        }
+        Air {}
     }
 }
 
@@ -58,7 +57,11 @@ impl Tile for Air {
     }
 
     fn transparent(&self) -> bool {
-        !self.out_of_bounds
+        true
+    }
+
+    fn name(&self) -> String {
+        "air".to_string()
     }
 }
 
@@ -82,6 +85,10 @@ impl Tile for Grass {
     ) {
         buffer.render(pos, &[Style::Fg(0, 255, 0), Style::Bold], '"');
     }
+
+    fn name(&self) -> String {
+        "grass".to_string()
+    }
 }
 
 pub struct Dirt;
@@ -94,6 +101,10 @@ impl Dirt {
 impl Tile for Dirt {
     fn render(&self, pos: (usize, usize), _size: (usize, usize), buffer: &mut render::FrameBuffer) {
         buffer.render(pos, &[Style::Fg(150, 75, 0)], '"');
+    }
+
+    fn name(&self) -> String {
+        "dirt".to_string()
     }
 }
 
@@ -108,17 +119,8 @@ impl Tile for Stone {
     fn render(&self, pos: (usize, usize), _size: (usize, usize), buffer: &mut render::FrameBuffer) {
         buffer.render(pos, &[Style::Fg(128, 128, 128)], '#');
     }
-}
 
-pub struct Gravel;
-impl Gravel {
-    pub fn new() -> Self {
-        Gravel {}
-    }
-}
-
-impl Tile for Gravel {
-    fn render(&self, pos: (usize, usize), _size: (usize, usize), buffer: &mut render::FrameBuffer) {
-        buffer.render(pos, &[Style::Fg(100, 100, 100)], '@');
+    fn name(&self) -> String {
+        "stone".to_string()
     }
 }
