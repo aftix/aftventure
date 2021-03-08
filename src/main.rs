@@ -37,6 +37,10 @@ fn main() {
     let stdin = stdin.lock();
     let stdout = stdout();
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
+
+    if !termion::is_tty(&stdout) {
+        panic!("Error: Must use aftventure on a tty");
+    }
     write!(stdout, "{}", cursor::Hide).unwrap();
 
     let mut world = world::World::new();

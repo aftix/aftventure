@@ -6,7 +6,7 @@ use crate::Player;
 use chrono::Utc;
 use noise::{NoiseFn, OpenSimplex, Seedable};
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::i32;
 
 pub struct Chunk {
     x: i32,
@@ -37,9 +37,11 @@ impl Chunk {
 
         for i in 0..32 {
             for j in 0..32 {
+                let i_fixed = i + 32 * x;
+                let j_fixed = j + 32 * y;
                 let scale = 0.08;
-                let scaled_x = scale * (i + 32 * x) as f64;
-                let scaled_y = scale * (j + 32 * y) as f64;
+                let scaled_x = scale * i_fixed as f64;
+                let scaled_y = scale * j_fixed as f64;
                 let mut val = simplex.get([scaled_x, scaled_y]);
                 val += 0.5 * simplex.get([scaled_x / 2.0, scaled_y / 2.0]);
                 val += 0.25 * simplex.get([scaled_x / 4.0, scaled_y / 4.0]);
@@ -93,7 +95,7 @@ impl World {
         let mut world = World {
             seed: Utc::now().timestamp() as u32,
             player: Player::new(0, 0, 128, '☺'),
-            chunk_render_distance: 8,
+            chunk_render_distance: 16,
             chunks: HashMap::new(),
             tile_map: HashMap::new(),
             tiles: vec![],
@@ -136,8 +138,8 @@ impl World {
             &self.tiles[air_id]
         } else {
             &self.tiles[self.chunks.get(&(chunk_x, chunk_y)).unwrap().get((
-                (x % 32).abs(),
-                (y % 32).abs(),
+                (x % 32 + 32) % 32,
+                (y % 32 + 32) % 32,
                 z,
             ))]
         }
