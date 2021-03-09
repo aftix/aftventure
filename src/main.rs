@@ -1,11 +1,13 @@
 use std::io;
 use std::io::{stdin, stdout, StdoutLock, Write};
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
 use termion::{
     clear, cursor,
     event::Key,
     input::TermRead,
     raw::{IntoRawMode, RawTerminal},
-    style,
 };
 
 pub mod render;
@@ -34,7 +36,6 @@ fn render(world: &world::World, out: &mut RawTerminal<StdoutLock<'_>>) -> Result
 
 fn main() {
     let stdin = stdin();
-    let stdin = stdin.lock();
     let stdout = stdout();
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
 
@@ -45,19 +46,35 @@ fn main() {
 
     let mut world = world::World::new();
 
-    render(&world, &mut stdout).unwrap();
-    for c in stdin.keys() {
-        match c.unwrap() {
-            Key::Char('q') => break,
-            Key::Up => world.move_player(0, -1, 0),
-            Key::Down => world.move_player(0, 1, 0),
-            Key::Left => world.move_player(-1, 0, 0),
-            Key::Right => world.move_player(1, 0, 0),
-            Key::Char('>') => world.move_player(0, 0, -1),
-            Key::Char('<') => world.move_player(0, 0, 1),
-            _ => {}
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        for c in stdin.keys() {
+            if let Ok(c) = c {
+                if let Err(_) = tx.send(c) {
+                    break;
+                }
+            }
         }
+    });
+
+    'out: loop {
+        while let Ok(c) = rx.try_recv() {
+            match c {
+                Key::Char('q') => break 'out,
+                Key::Up => world.move_player(0, -1, 0),
+                Key::Down => world.move_player(0, 1, 0),
+                Key::Left => world.move_player(-1, 0, 0),
+                Key::Right => world.move_player(1, 0, 0),
+                Key::Char('>') => world.move_player(0, 0, -1),
+                Key::Char('<') => world.move_player(0, 0, 1),
+                _ => {}
+            }
+        }
+
         render(&world, &mut stdout).unwrap();
+        thread::sleep(Duration::from_millis(50));
     }
+
     write!(stdout, "{}{}", clear::All, cursor::Show).unwrap();
 }

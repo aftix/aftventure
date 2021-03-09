@@ -39,14 +39,14 @@ impl Chunk {
             for j in 0..32 {
                 let i_fixed = i + 32 * x;
                 let j_fixed = j + 32 * y;
-                let scale = 0.08;
+                let scale = 0.05;
                 let scaled_x = scale * i_fixed as f64;
                 let scaled_y = scale * j_fixed as f64;
                 let mut val = simplex.get([scaled_x, scaled_y]);
                 val += 0.5 * simplex.get([scaled_x / 2.0, scaled_y / 2.0]);
-                val += 0.25 * simplex.get([scaled_x / 4.0, scaled_y / 4.0]);
-                val += 0.125 * simplex.get([scaled_x / 8.0, scaled_y / 8.0]);
-                let stackheight = ((val + 1.0) / 2.0) * 0.75 * 256.0;
+                //val += 0.25 * simplex.get([scaled_x / 4.0, scaled_y / 4.0]);
+                //val += 0.125 * simplex.get([scaled_x / 8.0, scaled_y / 8.0]);
+                let stackheight = ((val + 1.0) / 2.0) * (200.0 - 50.0) + 50.0;
                 let stackheight = stackheight as i32;
 
                 for k in 0..256 {
