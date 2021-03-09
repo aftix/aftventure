@@ -1,3 +1,4 @@
+use crate::generation;
 use crate::render;
 use crate::tile;
 use crate::tile::Tile;
@@ -13,6 +14,7 @@ pub struct Chunk {
     y: i32,
     tiles: Vec<usize>,
     air_id: usize,
+    chunk_seed: u32,
 }
 
 impl Chunk {
@@ -24,6 +26,7 @@ impl Chunk {
             y,
             tiles: vec![air_id; 32 * 32 * 256],
             air_id,
+            chunk_seed: ((seed as i32) * x + (seed as i32) * y) as u32,
         };
         let simplex = OpenSimplex::new().set_seed(seed);
 
@@ -35,19 +38,20 @@ impl Chunk {
         let stone = *map.get(&stone.name()).unwrap();
         let grass = *map.get(&grass.name()).unwrap();
 
+        let chunk_height = generation::height((x, y), &simplex);
+
         for i in 0..32 {
             for j in 0..32 {
-                let i_fixed = i + 32 * x;
-                let j_fixed = j + 32 * y;
-                let scale = 0.05;
-                let scaled_x = scale * i_fixed as f64;
-                let scaled_y = scale * j_fixed as f64;
-                let mut val = simplex.get([scaled_x, scaled_y]);
-                val += 0.5 * simplex.get([scaled_x / 2.0, scaled_y / 2.0]);
-                //val += 0.25 * simplex.get([scaled_x / 4.0, scaled_y / 4.0]);
-                //val += 0.125 * simplex.get([scaled_x / 8.0, scaled_y / 8.0]);
-                let stackheight = ((val + 1.0) / 2.0) * (200.0 - 50.0) + 50.0;
-                let stackheight = stackheight as i32;
+                /*let i_fixed = i as f64 / 32.0;
+                let j_fixed = j as f64 / 32.0;
+                let mut stackheight = chunk_gen.get([i_fixed, j_fixed]);
+                stackheight += chunk_gen.get([i_fixed / 2.0, j_fixed / 2.0]) / 2.0;
+                stackheight += chunk_gen.get([i_fixed / 4.0, j_fixed / 4.0]) / 4.0;
+                stackheight += chunk_gen.get([i_fixed / 8.0, j_fixed / 8.0]) / 8.0;
+                let stackheight = stackheight * 10.0 + chunk_height as f64;
+                let stackheight = stackheight as i32;*/
+                //let stackheight = generation::height((i + 32 * x, j + 32 * y), &simplex);
+                let stackheight = generation::height((i + 32 * x, j + 32 * y), &simplex);
 
                 for k in 0..256 {
                     let tile = if k == stackheight {

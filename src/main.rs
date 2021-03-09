@@ -10,6 +10,7 @@ use termion::{
     raw::{IntoRawMode, RawTerminal},
 };
 
+pub mod generation;
 pub mod render;
 pub mod tile;
 pub mod world;
