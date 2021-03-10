@@ -172,9 +172,6 @@ impl World {
                 }
             }
         }
-        for i in 1..=width {
-            buffer.render((i, 1), &[], '#');
-        }
     }
 
     pub fn move_player(&mut self, x: i32, y: i32, z: i32) {
