@@ -1,3 +1,5 @@
+use aftventure::*;
+use glium::glutin::dpi::LogicalSize;
 use std::io;
 use std::io::{stdin, stdout, StdoutLock, Write};
 use std::sync::mpsc;
@@ -10,24 +12,6 @@ use termion::{
     raw::{IntoRawMode, RawTerminal},
 };
 
-pub mod generation;
-pub mod render;
-pub mod tile;
-pub mod world;
-
-pub struct Player {
-    pub sprite: char,
-    pub x: i32,
-    pub y: i32,
-    pub z: i32,
-}
-
-impl Player {
-    pub fn new(x: i32, y: i32, z: i32, sprite: char) -> Self {
-        Player { sprite, x, y, z }
-    }
-}
-
 fn render(world: &world::World, out: &mut RawTerminal<StdoutLock<'_>>) -> Result<(), io::Error> {
     let mut framebuffer = render::FrameBuffer::new()?;
     framebuffer.render_world(&world);
@@ -36,7 +20,7 @@ fn render(world: &world::World, out: &mut RawTerminal<StdoutLock<'_>>) -> Result
 }
 
 fn main() {
-    let stdin = stdin();
+    /*let stdin = stdin();
     let stdout = stdout();
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
 
@@ -77,5 +61,8 @@ fn main() {
         thread::sleep(Duration::from_millis(50));
     }
 
-    write!(stdout, "{}{}", clear::All, cursor::Show).unwrap();
+    write!(stdout, "{}{}", clear::All, cursor::Show).unwrap();*/
+
+    let (disp, el) = gfx::new("title", LogicalSize::new(640.0, 480.0)).unwrap();
+    run(disp, el);
 }

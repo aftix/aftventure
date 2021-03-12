@@ -10,3 +10,5 @@ edition = "2018"
 termion="1.5"
 noise={version = "0.6", default-features=false}
 chrono="0.4"
+glium="0.29"
+cgmath="0.18"
