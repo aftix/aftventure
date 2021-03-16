@@ -1,8 +1,11 @@
 use crate::gfx;
 use crate::Player;
-use cgmath::{perspective, vec3, vec4, Deg, Matrix4, Point3, Rad};
+use cgmath::{perspective, vec3, vec4, Deg, Matrix3, Matrix4, Rad};
 use glium::{
-    glutin::event::{KeyboardInput, VirtualKeyCode},
+    glutin::{
+        dpi::LogicalPosition,
+        event::{KeyboardInput, VirtualKeyCode},
+    },
     Display, Program, Surface, VertexBuffer,
 };
 use std::time::Duration;
@@ -22,6 +25,15 @@ pub struct Game {
 impl Game {
     pub fn new(disp: Display) -> Self {
         let (width, height) = disp.get_framebuffer_dimensions();
+        {
+            let window = disp.gl_window();
+            let window = window.window();
+            window.set_cursor_grab(true).unwrap();
+            window.set_cursor_visible(false);
+            window
+                .set_cursor_position(LogicalPosition::new(width / 2, height / 2))
+                .unwrap();
+        }
         let shape: Vec<gfx::Vertex> = vec![
             vec4(0.0, 0.0, 0.0, 1.0),
             vec4(0.0, 0.0, 1.0, 1.0),
@@ -119,7 +131,26 @@ impl Game {
         };
     }
 
+    pub fn input_mouse_motion(&mut self, delta: (f64, f64), elapsed: Duration) {
+        let del_yaw = delta.0 as f32 * 0.0002 * elapsed.as_millis() as f32;
+        self.player.orientation =
+            Matrix3::from_axis_angle(self.player.up, Rad(-del_yaw)) * self.player.orientation;
+        let del_pitch = delta.1 as f32 * 0.0002 * elapsed.as_millis() as f32;
+        let axis = self.player.orientation.cross(self.player.up);
+        let mat = Matrix3::from_axis_angle(axis, Rad(-del_pitch));
+        self.player.orientation = mat * self.player.orientation;
+        self.player.up = mat * self.player.up;
+    }
+
     pub fn render(&self) {
+        {
+            let (width, height) = self.disp.get_framebuffer_dimensions();
+            let window = self.disp.gl_window();
+            let window = window.window();
+            window
+                .set_cursor_position(LogicalPosition::new(width / 2, height / 2))
+                .unwrap();
+        }
         let mut frame = self.disp.draw();
         frame.clear_color(0.0, 0.0, 0.0, 1.0);
         frame

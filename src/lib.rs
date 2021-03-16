@@ -6,7 +6,7 @@ extern crate glium;
 use cgmath::{vec3, Point3, Vector3};
 use glium::{
     glutin::{
-        event::{Event, VirtualKeyCode, WindowEvent},
+        event::{DeviceEvent, Event, WindowEvent},
         event_loop::{ControlFlow, EventLoop},
     },
     Display,
@@ -51,6 +51,12 @@ pub fn run(disp: Display, el: EventLoop<()>) {
         let new_now = std::time::Instant::now();
         let elapsed = new_now - now;
         match event {
+            Event::DeviceEvent { event, .. } => match event {
+                DeviceEvent::MouseMotion { delta } => {
+                    game.input_mouse_motion(delta, elapsed);
+                }
+                _ => (),
+            },
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::KeyboardInput { input, .. } => game.input(input, elapsed),
                 WindowEvent::CloseRequested => {
