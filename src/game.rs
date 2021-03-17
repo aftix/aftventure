@@ -1,12 +1,12 @@
 use crate::gfx;
 use crate::Player;
-use cgmath::{perspective, vec3, vec4, Deg, Matrix3, Matrix4, Rad};
+use cgmath::{perspective, vec3, Deg, Matrix3, Matrix4, Rad};
 use glium::{
     glutin::{
         dpi::LogicalPosition,
-        event::{KeyboardInput, VirtualKeyCode},
+        event::{KeyboardInput},
     },
-    Display, Program, Surface, VertexBuffer,
+    Display, Program, Surface,
 };
 use std::time::Duration;
 
@@ -14,12 +14,11 @@ pub struct Game {
     t: f32,
     w: f32,
     disp: Display,
-    vbo: Option<VertexBuffer<gfx::Vertex>>,
     program: Option<Program>,
-    indicies: Option<glium::index::IndexBuffer<u16>>,
     projection: Matrix4<f32>,
     modelview: Matrix4<f32>,
     player: Player,
+    mesh: gfx::Mesh,
 }
 
 impl Game {
@@ -28,34 +27,21 @@ impl Game {
         {
             let window = disp.gl_window();
             let window = window.window();
-            window.set_cursor_grab(true).unwrap();
+            //window.set_cursor_grab(true);//.unwrap();
             window.set_cursor_visible(false);
             window
                 .set_cursor_position(LogicalPosition::new(width / 2, height / 2))
                 .unwrap();
         }
-        let shape: Vec<gfx::Vertex> = vec![
-            vec4(0.0, 0.0, 0.0, 1.0),
-            vec4(0.0, 0.0, 1.0, 1.0),
-            vec4(0.0, 1.0, 0.0, 1.0),
-            vec4(0.0, 1.0, 1.0, 1.0),
-            vec4(1.0, 0.0, 0.0, 1.0),
-            vec4(1.0, 0.0, 1.0, 1.0),
-            vec4(1.0, 1.0, 0.0, 1.0),
-            vec4(1.0, 1.0, 1.0, 1.0),
-        ]
-        .into_iter()
-        .map(Into::into)
-        .collect();
 
         let vertex_src = r#"
             #version 140
 
-            in vec4 position;
+            in vec3 position;
             uniform mat4 projection_worldview;
 
             void main() {
-                gl_Position = projection_worldview * position;
+                gl_Position = projection_worldview * vec4(position, 1);
             }
         "#;
 
@@ -73,26 +59,14 @@ impl Game {
             t: 0.0,
             w: 0.0,
             disp,
-            vbo: None,
             program: None,
-            indicies: None,
             projection: perspective(Deg(90.0), (width as f32) / (height as f32), 0.1, 100.0),
             modelview: Matrix4::from_scale(0.5) * Matrix4::from_translation(vec3(-0.5, -0.5, 0.0)),
             player: Player::new(0, 0, 0, '#'),
+            mesh: gfx::Mesh::cube()
         };
+        game.mesh.upload(&game.disp).unwrap();
 
-        game.vbo = Some(VertexBuffer::new(&game.disp, &shape).unwrap());
-        game.indicies = Some(
-            glium::index::IndexBuffer::new(
-                &game.disp,
-                glium::index::PrimitiveType::TrianglesList,
-                &[
-                    0, 2, 1, 2, 1, 3, 4, 5, 6, 6, 5, 7, 0, 4, 2, 4, 6, 2, 0, 1, 5, 5, 4, 0, 2, 7,
-                    3, 7, 3, 6, 1, 3, 5, 3, 7, 5,
-                ],
-            )
-            .unwrap(),
-        );
         game.program =
             Some(Program::from_source(&game.disp, vertex_src, fragment_src, None).unwrap());
 
@@ -155,8 +129,8 @@ impl Game {
         frame.clear_color(0.0, 0.0, 0.0, 1.0);
         frame
             .draw(
-                self.vbo.as_ref().unwrap(),
-                self.indicies.as_ref().unwrap(),
+                self.mesh.vbo().as_ref().unwrap(),
+                self.mesh.ibo().as_ref().unwrap(),
                 self.program.as_ref().unwrap(),
                 &uniform! { projection_worldview: Into::<[[f32; 4]; 4]>::into(self.projection * Matrix4::look_to_rh(self.player.position, self.player.orientation, self.player.up) * self.modelview* Matrix4::from_angle_z(Rad(self.t)) * Matrix4::from_angle_x(Rad(self.w))) },
                 &Default::default(),
